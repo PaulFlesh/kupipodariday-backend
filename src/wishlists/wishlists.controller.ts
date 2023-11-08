@@ -21,7 +21,7 @@ export class WishlistsController {
   constructor(
     private readonly wishlistsService: WishlistsService,
     private readonly wishesService: WishesService,
-  ) {}
+  ) { }
 
   @Post()
   async create(
@@ -74,7 +74,9 @@ export class WishlistsController {
   }
 
   @Delete(':id')
-  async remove(@Request() req, @Param('id') id: string): Promise<DeleteResult> {
+  async remove(
+    @Request() req,
+    @Param('id') id: string): Promise<DeleteResult> {
     return this.wishlistsService.removeOne({ id: +id, owner: req.user.id });
   }
 }

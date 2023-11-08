@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository, FindManyOptions, FindOneOptions } from 'typeorm';
@@ -11,10 +11,14 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    return this.userRepository.save(createUserDto);
+    try {
+      return this.userRepository.save(createUserDto);
+    } catch (error) {
+      throw new ConflictException('Такой пользователь уже существует.');
+    }
   }
 
   async findAll(
@@ -31,21 +35,19 @@ export class UsersService {
     id: number,
     updateUserDto: UpdateUserDto,
   ): Promise<UserProfileResponseDto> {
-    const updateResult = await this.userRepository
-      .createQueryBuilder()
-      .update(User, updateUserDto)
-      .where({ id })
-      .returning([
-        'id',
-        'username',
-        'about',
-        'avatar',
-        'email',
-        'createdAt',
-        'updatedAt',
-      ])
-      .execute();
-    return updateResult.raw[0];
+    const isUserExists =
+      (updateUserDto?.username || updateUserDto?.email) &&
+      (await this.findOne({
+        where: [
+          { username: updateUserDto.username },
+          { email: updateUserDto.email },
+        ],
+      }));
+    if (isUserExists) {
+      throw new ConflictException('Такой пользователь уже существует.');
+    }
+    await this.userRepository.update(id, updateUserDto);
+    return await this.userRepository.findOne({ where: { id } });
   }
 
   async removeOne(id: number) {

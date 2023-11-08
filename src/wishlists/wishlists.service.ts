@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Wishlist } from './entities/wishlist.entity';
 import {
@@ -41,12 +41,22 @@ export class WishlistsService {
     paramsObject: FindOptionsWhere<Wishlist>,
     updateUserDto: UpdateWishlistDto,
   ): Promise<UpdateResult> {
+    if (!paramsObject.owner) {
+      throw new ForbiddenException(
+        'Вы не можете редактировать чужие списки подарков.',
+      );
+    }
     return this.wishlistRepository.update(paramsObject, updateUserDto);
   }
 
   async removeOne(
     paramsObject: FindOptionsWhere<Wishlist>,
   ): Promise<DeleteResult> {
+    if (!paramsObject.owner) {
+      throw new ForbiddenException(
+        'Вы не можете удалять чужие списки подарков.',
+      );
+    }
     return this.wishlistRepository.delete(paramsObject);
   }
 }
